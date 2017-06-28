@@ -311,8 +311,7 @@ public class MessageCryptoHelper {
     }
 
     private void callAsyncParseAutocryptHeaderOperation() {
-        // TODO make actually async (then callback to onCryptoFinished)
-        autocryptOperations.processCleartextMessage(openPgpApi, (LocalMessage) currentCryptoPart.part);
+        autocryptOperations.processCleartextMessageAsync(openPgpApi, (LocalMessage) currentCryptoPart.part);
         onCryptoFinished();
     }
 

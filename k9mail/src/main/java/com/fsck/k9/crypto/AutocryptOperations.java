@@ -17,6 +17,7 @@ import com.fsck.k9.mail.internet.MimeUtility;
 import okio.ByteString;
 import org.openintents.openpgp.AutocryptPeerUpdate;
 import org.openintents.openpgp.util.OpenPgpApi;
+import org.openintents.openpgp.util.OpenPgpApi.IOpenPgpCallback;
 import timber.log.Timber;
 
 
@@ -59,11 +60,16 @@ public class AutocryptOperations {
         return true;
     }
 
-    public void processCleartextMessage(OpenPgpApi openPgpApi, MimeMessage currentMessage) {
+    public void processCleartextMessageAsync(OpenPgpApi openPgpApi, MimeMessage currentMessage) {
         Intent intent = new Intent(OpenPgpApi.ACTION_UPDATE_AUTOCRYPT_PEER);
         boolean hasInlineKeyData = addAutocryptPeerUpdateToIntentIfPresent(currentMessage, intent);
         if (hasInlineKeyData) {
-            openPgpApi.executeApi(intent, (InputStream) null, null);
+            openPgpApi.executeApiAsync(intent, null, null, new IOpenPgpCallback() {
+                @Override
+                public void onReturn(Intent result) {
+                    Timber.d("Autocrypt update OK!");
+                }
+            });
         }
     }
 
