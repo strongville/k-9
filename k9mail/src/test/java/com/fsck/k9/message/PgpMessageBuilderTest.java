@@ -23,6 +23,7 @@ import com.fsck.k9.activity.compose.ComposeCryptoStatus.ComposeCryptoStatusBuild
 import com.fsck.k9.activity.compose.RecipientPresenter.CryptoMode;
 import com.fsck.k9.activity.compose.RecipientPresenter.CryptoProviderState;
 import com.fsck.k9.activity.misc.Attachment;
+import com.fsck.k9.crypto.AutocryptOperations;
 import com.fsck.k9.mail.Address;
 import com.fsck.k9.mail.BodyPart;
 import com.fsck.k9.mail.BoundaryGenerator;
@@ -65,6 +66,7 @@ public class PgpMessageBuilderTest {
     private static final long TEST_SIGN_KEY_ID = 123L;
     private static final long TEST_SELF_ENCRYPT_KEY_ID = 234L;
     private static final String TEST_MESSAGE_TEXT = "message text with a ☭ CCCP symbol";
+    public static final byte[] AUTOCRYPT_KEY_MATERIAL = { 1, 2, 3 };
 
 
     private ComposeCryptoStatusBuilder cryptoStatusBuilder = createDefaultComposeCryptoStatusBuilder();
@@ -474,7 +476,13 @@ public class PgpMessageBuilderTest {
 
     private static PgpMessageBuilder createDefaultPgpMessageBuilder(OpenPgpApi openPgpApi) {
         PgpMessageBuilder builder = new PgpMessageBuilder(
-                RuntimeEnvironment.application, MessageIdGenerator.getInstance(), BoundaryGenerator.getInstance());
+                RuntimeEnvironment.application, MessageIdGenerator.getInstance(), BoundaryGenerator.getInstance(),
+                new AutocryptOperations()) {
+            @Override
+            byte[] getKeyMaterialFromApi(OpenPgpApi openPgpApi, long keyId, String minimizeForUserId) {
+                return AUTOCRYPT_KEY_MATERIAL;
+            }
+        };
         builder.setOpenPgpApi(openPgpApi);
 
         Identity identity = new Identity();

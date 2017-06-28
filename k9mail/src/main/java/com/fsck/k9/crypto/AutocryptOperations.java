@@ -3,6 +3,7 @@ package com.fsck.k9.crypto;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 
@@ -140,6 +141,39 @@ public class AutocryptOperations {
 
     public boolean hasAutocryptHeader(MimeMessage currentMessage) {
         return currentMessage.getHeader(AUTOCRYPT_HEADER).length > 0;
+    }
+
+    public void addAutocryptHeaderToMessage(MimeMessage message, byte[] keyData,
+            String autocryptAddress, boolean preferEncryptMutual) {
+        AutocryptHeader autocryptHeader = new AutocryptHeader(
+                Collections.<String,String>emptyMap(), autocryptAddress, keyData, preferEncryptMutual);
+        String rawAutocryptHeader = autocryptHeaderToString(autocryptHeader);
+
+        message.addRawHeader(AUTOCRYPT_HEADER, rawAutocryptHeader);
+    }
+
+    private String autocryptHeaderToString(AutocryptHeader autocryptHeader) {
+        if (!autocryptHeader.parameters.isEmpty()) {
+            throw new UnsupportedOperationException("arbitrary parameters not supported");
+        }
+
+        String autocryptHeaderString = AUTOCRYPT_HEADER + ": ";
+        autocryptHeaderString += AUTOCRYPT_PARAM_TO + "=" + autocryptHeader.addr + ";";
+        if (autocryptHeader.isPreferEncryptMutual) {
+            autocryptHeaderString += AUTOCRYPT_PARAM_PREFER_ENCRYPT + "=" + AUTOCRYPT_PREFER_ENCRYPT_MUTUAL + ";";
+        }
+        autocryptHeaderString += AUTOCRYPT_PARAM_KEY_DATA + "=" +
+                ByteString.of(autocryptHeader.keyData).base64();
+        StringBuilder headerLines = new StringBuilder();
+        for (int i = 0, j = autocryptHeaderString.length(); i < j; i += 76) {
+            if (i +76 > j) {
+                headerLines.append(autocryptHeaderString.substring(i)).append("\n ");
+            } else {
+                headerLines.append(autocryptHeaderString.substring(i, i+76)).append("\n ");
+            }
+        }
+
+        return headerLines.toString();
     }
 
     @VisibleForTesting
