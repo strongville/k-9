@@ -82,9 +82,6 @@ public class PgpMessageBuilder extends MessageBuilder {
         if (cryptoStatus == null) {
             throw new IllegalStateException("PgpMessageBuilder must have cryptoStatus set before building!");
         }
-        if (cryptoStatus.isCryptoDisabled()) {
-            throw new AssertionError("PgpMessageBuilder must not be used if crypto is disabled!");
-        }
 
         try {
             if (!cryptoStatus.isProviderStateOk()) {
@@ -122,6 +119,7 @@ public class PgpMessageBuilder extends MessageBuilder {
             boolean isPgpInlineMode = cryptoStatus.isPgpInlineModeEnabled();
 
             if (!shouldSign && !shouldEncrypt) {
+                queueMessageBuildSuccess(currentProcessedMimeMessage);
                 return;
             }
 

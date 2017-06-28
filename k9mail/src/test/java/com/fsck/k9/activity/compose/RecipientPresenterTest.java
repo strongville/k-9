@@ -154,7 +154,7 @@ public class RecipientPresenterTest {
 
         assertEquals(CryptoStatusDisplayType.DISABLED, status.getCryptoStatusDisplayType());
         assertTrue(status.isProviderStateOk());
-        assertFalse(status.shouldUsePgpMessageBuilder());
+        assertTrue(status.shouldUsePgpMessageBuilder());
     }
 
     @Test
