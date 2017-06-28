@@ -30,7 +30,7 @@ public class AutocryptOperations {
     }
 
 
-    private boolean addAutocryptPeerUpdateToIntentIfPresent(MimeMessage currentMessage, Intent intent) {
+    public boolean addAutocryptPeerUpdateToIntentIfPresent(MimeMessage currentMessage, Intent intent) {
         AutocryptHeader autocryptHeader = getValidAutocryptHeader(currentMessage);
         if (autocryptHeader == null) {
             return false;
