@@ -13,7 +13,6 @@ import android.content.Context;
 import android.os.PowerManager;
 
 import com.fsck.k9.mail.AuthenticationFailedException;
-import com.fsck.k9.mail.Flag;
 import com.fsck.k9.mail.K9MailLib;
 import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
@@ -504,6 +503,12 @@ class ImapFolderPusher extends ImapFolder {
                             Timber.d("Got untagged EXPUNGE for msgseq %d for %s", msgSeq, getLogId());
                         }
 
+                        if (K9MailLib.isDebug()) {
+                            Timber.d("Scheduling removal of message with seq %d due to expunge", msgSeq);
+                        }
+
+                        removeMsgUids.add("thisisahack");
+
                         List<Long> newSeqs = new ArrayList<Long>();
                         Iterator<Long> flagIter = flagSyncMsgSeqs.iterator();
                         while (flagIter.hasNext()) {
@@ -517,35 +522,6 @@ class ImapFolderPusher extends ImapFolder {
                         }
 
                         flagSyncMsgSeqs.addAll(newSeqs);
-
-                        List<Long> msgSeqs = new ArrayList<Long>(msgSeqUidMap.keySet());
-                        Collections.sort(msgSeqs);  // Have to do comparisons in order because of msgSeq reductions
-
-                        for (long msgSeqNum : msgSeqs) {
-                            if (K9MailLib.isDebug()) {
-                                Timber.v("Comparing EXPUNGEd msgSeq %d to %d", msgSeq, msgSeqNum);
-                            }
-
-                            if (msgSeqNum == msgSeq) {
-                                String uid = msgSeqUidMap.get(msgSeqNum);
-
-                                if (K9MailLib.isDebug()) {
-                                    Timber.d("Scheduling removal of UID %s because msgSeq %d was expunged", uid, msgSeqNum);
-                                }
-
-                                removeMsgUids.add(uid);
-                                msgSeqUidMap.remove(msgSeqNum);
-                            } else if (msgSeqNum > msgSeq) {
-                                String uid = msgSeqUidMap.get(msgSeqNum);
-
-                                if (K9MailLib.isDebug()) {
-                                    Timber.d("Reducing msgSeq for UID %s from %d to %d", uid, msgSeqNum, (msgSeqNum - 1));
-                                }
-
-                                msgSeqUidMap.remove(msgSeqNum);
-                                msgSeqUidMap.put(msgSeqNum - 1, uid);
-                            }
-                        }
                     }
                 } catch (Exception e) {
                     Timber.e(e, "Could not handle untagged FETCH for %s", getLogId());
@@ -607,36 +583,9 @@ class ImapFolderPusher extends ImapFolder {
         }
 
         private void removeMessages(List<String> removeUids) {
-            List<Message> messages = new ArrayList<Message>(removeUids.size());
-
-            try {
-                List<ImapMessage> existingMessages = getMessagesFromUids(removeUids);
-                for (Message existingMessage : existingMessages) {
-                    needsPoll = true;
-                    msgSeqUidMap.clear();
-
-                    String existingUid = existingMessage.getUid();
-                    Timber.w("Message with UID %s still exists on server, not expunging", existingUid);
-
-                    removeUids.remove(existingUid);
-                }
-
-                for (String uid : removeUids) {
-                    ImapMessage message = new ImapMessage(uid, ImapFolderPusher.this);
-
-                    try {
-                        message.setFlagInternal(Flag.DELETED, true);
-                    } catch (MessagingException me) {
-                        Timber.e("Unable to set DELETED flag on message %s", message.getUid());
-                    }
-
-                    messages.add(message);
-                }
-
-                pushReceiver.messagesRemoved(ImapFolderPusher.this, messages);
-            } catch (Exception e) {
-                Timber.e("Cannot remove EXPUNGEd messages");
-            }
+            needsPoll = true;
+            msgSeqUidMap.clear();
+            pushReceiver.messagesRemoved(ImapFolderPusher.this, null);
         }
 
         private void syncFolderOnConnect() throws MessagingException {
